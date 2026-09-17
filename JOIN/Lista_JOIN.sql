@@ -141,7 +141,7 @@ SELECT musica.*, album.nome FROM musica
 	join Album on fkAlbum = idAlbum
     WHERE genero = 'Rock';
     
-/*Exercício 4:
+/*Exercício 3:
 
 
 - Criar as tabelas;
@@ -164,10 +164,12 @@ nome VARCHAR(45),
 cpf CHAR(11)
 );
 
-INSERT INTO pessoa VALUES 
-(DEFAULT, 'Ana Silva', '12345678901'),
-(DEFAULT, 'Carlos Eduardo', '98765432100'),
-(DEFAULT, 'Mariana Souza', '45678912344');
+INSERT INTO pessoa VALUES
+(DEFAULT, 'Jota', '12345678901'),
+(DEFAULT, 'Mariana', null),
+(DEFAULT, 'Carlos', '34567890123'),
+(DEFAULT, 'Ana', null),
+(DEFAULT, 'Pedro', '56789012345');
 
 CREATE TABLE reserva(
 idReserva int primary key auto_increment,
@@ -177,13 +179,84 @@ dtDevolucao DATETIME,
 fkPessoa INT,
 constraint fkPessoaReserva 	
 	foreign key (fkPessoa)
-		references fkPessoa(idPessoa)
+		references Pessoa(idPessoa)
 );
 
-INSERT INTO reserva VALUES 
-(DEFAULT, '2026-09-10 08:30:00', '2026-09-15 10:00:00', '2026-09-20 18:00:00', 1),
-(DEFAULT, '2026-09-12 14:15:00', '2026-09-16 09:00:00', '2026-09-18 17:30:00', 2),
-(DEFAULT, '2026-09-14 11:00:00', '2026-09-15 14:00:00', '2026-09-22 12:00:00', 3);
+INSERT INTO reserva VALUES
+(DEFAULT, '2026-09-01 10:00:00', '2026-09-02 09:00:00', '2026-09-05 18:00:00', 1),
+(DEFAULT, '2026-09-05 14:30:00', '2026-09-04 10:00:00', '2026-09-06 12:00:00', 2),
+(DEFAULT, '2026-09-05 08:15:00', '2026-09-06 09:00:00', '2026-09-08 17:00:00', 3),
+(DEFAULT, '2026-09-07 11:45:00', '2026-09-08 10:30:00', '2026-09-10 15:00:00', 4),
+(DEFAULT, '2026-09-09 16:00:00', '2026-09-10 09:00:00', '2026-09-12 20:00:00', 5);
+
+SELECT * FROM reserva
+	JOIN pessoa ON idPessoa = fkPessoa;
+    
+SELECT pessoa.nome AS Nome_da_pessoa, reserva.dtReserva AS Data_Reserva FROM reserva
+	JOIN pessoa ON idPessoa = fkPessoa;
+    
+SELECT pessoa.nome AS Nome_da_pessoa, reserva.dtReserva AS Data_Reserva,
+case
+when dtReserva > '2026-09-05 00:00:00' and dtReserva < '2026-09-05 23:59:59' then 'Preço promoção'
+else 'Preço normal'
+end as Valores
+ FROM reserva
+	JOIN pessoa ON idPessoa = fkPessoa;
+    
+
+    
+   SELECT pessoa.nome AS Nome_da_pessoa, IFNULL(pessoa.cpf,'Não informado') AS CPF , reserva.dtReserva AS Data_Reserva FROM reserva
+	JOIN pessoa ON idPessoa = fkPessoa; 
+    
+    
+/*Exercício 4:
+
+
+- Criar as tabelas;
+
+- Inserir 5 registros
+
+- Configurar chave estrangeira
+
+- Exibir dados;
+
+- Exibir dados com AS;
+
+- Exibir dados com CASE;
+
+- Exibir dados com IFNULL;*/
+
+CREATE TABLE pessoa1(
+idPessoa1 int primary key auto_increment,
+nome VARCHAR(45),
+dtNascimento DATE
+);
+
+INSERT INTO pessoa1 (idPessoa1, nome, dtNascimento) VALUES
+(DEFAULT, 'Ana Silva', '1990-05-12'),
+(DEFAULT, 'Bruno Costa', '1985-11-30'),
+(DEFAULT, 'Carla Mendes', '1998-02-20'),
+(DEFAULT, 'Diego Rocha', '2000-07-15'),
+(DEFAULT, 'Elisa Farias', '1992-09-08');
+
+CREATE TABLE pessoa2(
+idPessoa2 int primary key auto_increment,
+nome VARCHAR(45),
+dtNascimento DATE
+);
+
+INSERT INTO pessoa2 VALUES
+(DEFAULT, 'Fábio Nunes', '1988-03-22'),
+(DEFAULT, 'Gabriela Lima', '1995-06-17'),
+(DEFAULT, 'Hugo Teixeira', '1993-12-01'),
+(DEFAULT, 'Isabela Souza', '1999-04-10'),
+(DEFAULT, 'João Pereira', '1987-08-25');
+
+
+
+
+
+    
     
 
     
