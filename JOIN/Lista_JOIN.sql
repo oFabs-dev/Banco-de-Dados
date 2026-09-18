@@ -232,12 +232,12 @@ nome VARCHAR(45),
 dtNascimento DATE
 );
 
-INSERT INTO pessoa1 (idPessoa1, nome, dtNascimento) VALUES
-(DEFAULT, 'Ana Silva', '1990-05-12'),
-(DEFAULT, 'Bruno Costa', '1985-11-30'),
-(DEFAULT, 'Carla Mendes', '1998-02-20'),
-(DEFAULT, 'Diego Rocha', '2000-07-15'),
-(DEFAULT, 'Elisa Farias', '1992-09-08');
+INSERT INTO pessoa1 VALUES
+(DEFAULT, 'Ana', '1990-05-12'),
+(DEFAULT, 'Bruno', null),
+(DEFAULT, 'Carla', '1998-02-20'),
+(DEFAULT, 'Diego', null),
+(DEFAULT, 'Elisa', '1992-09-08');
 
 CREATE TABLE pessoa2(
 idPessoa2 int primary key auto_increment,
@@ -246,25 +246,142 @@ dtNascimento DATE
 );
 
 INSERT INTO pessoa2 VALUES
-(DEFAULT, 'Fábio Nunes', '1988-03-22'),
-(DEFAULT, 'Gabriela Lima', '1995-06-17'),
-(DEFAULT, 'Hugo Teixeira', '1993-12-01'),
-(DEFAULT, 'Isabela Souza', '1999-04-10'),
-(DEFAULT, 'João Pereira', '1987-08-25');
+(DEFAULT, 'Fábio', '1988-03-22'),
+(DEFAULT, 'Gabriela', null),
+(DEFAULT, 'Hugo', null),
+(DEFAULT, 'Isabela', '1999-04-10'),
+(DEFAULT, 'João', '1987-08-25');
 
 
+ALTER TABLE pessoa2 ADD COLUMN fkPessoa1 INT UNIQUE;
+
+ALTER TABLE pessoa2 ADD constraint fkPessoa1_2 foreign key (fkPessoa1) REFERENCES pessoa1(idPessoa1);
+
+UPDATE pessoa2 SET fkPessoa1 = 1 WHERE idPessoa2 = 1;
+UPDATE pessoa2 SET fkPessoa1 = 2 WHERE idPessoa2 = 2;
+UPDATE pessoa2 SET fkPessoa1 = 3 WHERE idPessoa2 = 3;
+UPDATE pessoa2 SET fkPessoa1 = 4 WHERE idPessoa2 = 4;
+UPDATE pessoa2 SET fkPessoa1 = 5 WHERE idPessoa2 = 5;
 
 
-
+Select * from pessoa2
+	join pessoa1 on fkPessoa1 = idPessoa1;
+    
+Select pessoa1.nome AS Grupo1, pessoa1.dtNascimento AS Data_de_Nascimento, pessoa2.nome AS Grupo2, pessoa2.dtNascimento AS Data_de_Nascimento  from pessoa2
+	join pessoa1 on fkPessoa1 = idPessoa1;
     
     
-
+    
+Select pessoa1.nome AS Grupo1, pessoa1.dtNascimento AS Data_de_Nascimento, pessoa2.nome AS Grupo2, pessoa2.dtNascimento AS Data_de_Nascimento,
+case
+when pessoa1.dtNascimento or pessoa2.dtNascimento < '1990-01-01' then 'ESTA FICANDO VELHO'
+else 'AINDA ESTA NOVO'
+end as statuss
+ from pessoa2
+	join pessoa1 on fkPessoa1 = idPessoa1; 
     
 
+    
+Select pessoa1.nome AS Grupo1, ifnull(pessoa1.dtNascimento,'Não informado') AS Data_de_Nascimento, pessoa2.nome AS Grupo2, ifnull(pessoa2.dtNascimento,'Não informado') AS Data_de_Nascimento  from pessoa2
+	join pessoa1 on fkPessoa1 = idPessoa1;
+    
+    
+/*Exercício 5:
 
 
 
+Referente a regra de negócio acima, cria a modelagem utilizando um relacionamento 1:1, implemente com o script realizando os seguintes comandos:
+
+- Criar as tabelas;
+
+- Inserir 5 registros
+
+- Configurar chave estrangeira
+
+- Exibir dados;
+
+- Exibir dados com AS;
+
+- Exibir dados com CASE;
+
+- Exibir dados com IFNULL;*/
+
+CREATE TABLE pessoas(
+idPessoa INT primary key auto_increment,
+nome VARCHAR (30),
+idade INT
+);
+
+INSERT INTO pessoas VALUES
+(default,'Joca', 18),
+(default,'Marcio', 19),
+(default,'Carlos', 25),
+(default,'Antonio', 22),
+(default,'Fernadinho', 21);
+
+CREATE TABLE CNH(
+idCNH INT primary key auto_increment,
+CPF CHAR (11),
+categoria VARCHAR(5),
+validade DATE
+);
+
+INSERT INTO CNH VALUES
+(default,'123.456.789-00', 'B', '2026-09-21'),
+(default, null, 'AB','2027-01-14'),
+(default,'456.789.123-00', 'A', '2026-09-30'),
+(default, null, 'AB', '2026-12-04'),
+(default,'789.123.456-00', 'B', '2027-02-03');
+
+ALTER TABLE pessoas ADD COLUMN fkCNH INT UNIQUE;
+
+ALTER TABLE pessoas ADD constraint fkPessoaCNH foreign key (fkCNH) REFERENCES CNH(idCNH);
+
+UPDATE pessoas set fkCNH = 1 WHERE idpessoa = 1;
+UPDATE pessoas set fkCNH = 2 WHERE idpessoa = 2;
+UPDATE pessoas set fkCNH = 3 WHERE idpessoa = 3;
+UPDATE pessoas set fkCNH = 4 WHERE idpessoa = 4;
+UPDATE pessoas set fkCNH = 5 WHERE idpessoa = 5;
+
+select * from pessoas 
+join CNH on fkCNH = idCNH;
+
+select pessoas.nome as Nome_da_pessoa, CNH.categoria as Categoria_Habilitação from pessoas 
+join CNH on fkCNH = idCNH;
+
+select pessoas.nome as Nome_da_pessoa, CNH.categoria as Categoria_Habilitação,
+case
+when categoria = 'A' then 'Moto'
+when categoria = 'B' then 'Carro'
+else 'Carro e moto'
+end as tipo
+ from pessoas
+join CNH on fkCNH = idCNH;
+
+select pessoas.nome as Nome_da_pessoa, CNH.categoria as Categoria_Habilitação, ifnull(CNH.CPF,'Não informado') AS CPF from pessoas 
+join CNH on fkCNH = idCNH;
 
 
+/*Exercício 6:
+Regra de negócio: 
 
+1 Farmácia tem no mínimo 1 e no máximo 1 endereço, 1 endereço é de no mínimo 1 farmácia e no máximo 1.
+
+1 Farmácia tem no mínimo 1 farmacêutico e no máximo n, 1 farmacêutico é de no mínimo 1 farmácia e no máximo 1.
+
+- Criar a modelagem lógica na regra acima, com os campos de sua escolha.
+
+- Criar as tabelas;
+
+- Inserir 5 registros;
+
+- Configurar chave estrangeira;
+
+- Exibir dados;
+
+- Exibir dados com AS;
+
+- Exibir dados com CASE;
+
+- Exibir dados com IFNULL;*/
 
