@@ -385,3 +385,83 @@ Regra de negócio:
 
 - Exibir dados com IFNULL;*/
 
+
+CREATE TABLE farmacia(
+idFarmacia int primary key auto_increment,
+nome VARCHAR(30),
+cnpj CHAR(14) UNIQUE,
+fkEndereco INT UNIQUE,
+CONSTRAINT fkEnderenco_farma
+ foreign key (fkEndereco) REFERENCES endereco(idEndereco)
+
+);
+
+
+CREATE TABLE endereco(
+idEndereco int primary key auto_increment,
+pais VARCHAR (30),
+estado VARCHAR (30),
+rua VARCHAR (30),
+numero VARCHAR(10)
+
+);
+
+CREATE TABLE farmaceutico(
+idFarmaceutico int primary key auto_increment,
+nome VARCHAR (30),
+cpf char(11) unique,
+ fkFarma INT,
+CONSTRAINT fkFarmaceutico_farma
+ foreign key (fkFarma) REFERENCES farmacia(idFarmacia)
+);
+
+
+INSERT INTO endereco VALUES
+(DEFAULT, 'Brasil', 'São Paulo', 'Av. Paulista',   '1000'),
+(DEFAULT, 'Brasil', 'Paraná', 'Rua das Flores', '250'),
+(DEFAULT, 'Brasil', 'Rio de Janeiro',  'Av. Atlântica',  '500'),
+(DEFAULT, 'Brasil', 'Minas Gerais', 'Rua da Bahia',   '120'),
+(DEFAULT, 'Brasil', 'Ceará',  'Av. Beira Mar',  '80');
+ 
+INSERT INTO farmacia VALUES
+(DEFAULT, 'Farma Vida Paulista', '11849311000111', 1),
+(DEFAULT, 'Farma Curitiba', '111739281000222', 2 ),
+(DEFAULT, 'Farma Copacabana', '117338111000333', 3),
+(DEFAULT, 'Farma Savassi', '11193711000444', 4),
+(DEFAULT, 'Farma Meireles', '18361111000555', 5);
+ 
+INSERT INTO farmaceutico VALUES
+(DEFAULT, 'Ellen','12892233301',1),
+(DEFAULT, 'Bruno', null ,1),
+(DEFAULT, 'Carla','11748333303',2),
+(DEFAULT, 'Diego', null,3),
+(DEFAULT, 'Elisa','12692233305',4);
+
+
+select * from farmacia 
+JOIN endereco ON idEndereco = fkEndereco;
+
+select * from farmaceutico 
+JOIN farmacia ON idFarmacia = fkFarma;
+
+
+select farmaceutico.nome AS Colaborador, farmacia.nome AS Loja from farmaceutico 
+JOIN farmacia ON idFarmacia = fkFarma;
+
+select farmaceutico.nome AS Colaborador, farmacia.nome AS Loja from farmaceutico 
+JOIN farmacia ON idFarmacia = fkFarma;
+
+select farmaceutico.nome AS Colaborador, farmacia.nome AS Loja,
+case
+when farmacia.nome = 'Farma Vida Paulista' then 'Muitas vendas'
+when farmacia.nome = 'Farma Savassi' then 'Mais ou menos'
+else 'Poucas vendas'
+end as VENDAS
+ from farmaceutico 
+JOIN farmacia ON idFarmacia = fkFarma;
+
+
+select farmaceutico.nome AS Colaborador, farmacia.nome AS Loja, ifnull(cpf,'sem informação') as CPF from farmaceutico 
+JOIN farmacia ON idFarmacia = fkFarma;
+
+/**/
