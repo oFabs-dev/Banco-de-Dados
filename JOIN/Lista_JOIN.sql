@@ -74,7 +74,8 @@ SELECT Pais.nome,capital , atleta.* FROM Atleta
         
         
         
-/* No MySQL Workbench, utilizando o banco de dados ‘sprint2’:
+/*Exercício 2:
+ No MySQL Workbench, utilizando o banco de dados ‘sprint2’:
 • Criar a tabela chamada Musica para conter os dados: idMusica, titulo (tamanho
 40), artista (tamanho 40), genero (tamanho 40), sendo que idMusica é a chave
 primária da tabela.
@@ -202,8 +203,6 @@ else 'Preço normal'
 end as Valores
  FROM reserva
 	JOIN pessoa ON idPessoa = fkPessoa;
-    
-
     
    SELECT pessoa.nome AS Nome_da_pessoa, IFNULL(pessoa.cpf,'Não informado') AS CPF , reserva.dtReserva AS Data_Reserva FROM reserva
 	JOIN pessoa ON idPessoa = fkPessoa; 
@@ -464,4 +463,32 @@ JOIN farmacia ON idFarmacia = fkFarma;
 select farmaceutico.nome AS Colaborador, farmacia.nome AS Loja, ifnull(cpf,'sem informação') as CPF from farmaceutico 
 JOIN farmacia ON idFarmacia = fkFarma;
 
-/**/
+/*
+DESAFIO:
+Crie as seguintes tabelas em um script .sql*/
+
+
+CREATE TABLE Timee(
+idTime int primary key auto_increment,
+nome VARCHAR(45),
+estado CHAR(2)
+);
+
+CREATE TABLE tecnico(
+idTecnico INT primary key auto_increment,
+nome VARCHAR(45),
+fkTime INT UNIQUE,
+constraint fkTimeTecnico foreign key (fkTime) references Timee(idTime)
+);
+
+CREATE TABLE Escalacao(
+idEscalacao INT primary key auto_increment,
+numJogador CHAR(3),
+nome VARCHAR(45),
+posica VARCHAR(45),
+tipo VARCHAR(45),
+dtJogo DATETIME,
+fkTecnico INT,
+constraint fkTecnicoEscalacao foreign key (fkTecnico) references tecnico(idTecnico)
+);
+
