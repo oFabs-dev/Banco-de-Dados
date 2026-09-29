@@ -597,5 +597,297 @@ join cliente on fkCliente = idCliente;
 SELECT * from veiculo
 right join cliente on fkCliente = idCliente;
 
+/*5. Torneio de CS2*/
 
+/*Parte 1 -- Criar as Tabelas com Constraints*/
+
+USE sprint2;
+
+CREATE TABLE equipe (
+    idEquipe INT PRIMARY KEY auto_increment,
+    nome VARCHAR(45),
+    regiao VARCHAR(45),
+    ranking INT,
+    CONSTRAINT chkRegiao CHECK (regiao IN ('Americas', 'Europa', 'Asia'))
+);
+
+CREATE TABLE jogador_cs (
+    idJogador INT PRIMARY KEY auto_increment,
+    nickname VARCHAR(45),
+    nome_real VARCHAR(45),
+    funcao VARCHAR(45),
+    fkEquipe INT,
+    CONSTRAINT chkFuncao CHECK (funcao IN ('Rifler', 'AWPer', 'Entry', 'IGL', 'Suporte')),
+    CONSTRAINT fkJogadoRequipe FOREIGN KEY (fkEquipe) REFERENCES equipe(idEquipe)
+);
+
+/*Parte 2 -- Inserir Dados de Exemplo*/
+
+INSERT INTO equipe VALUES
+(default,'FURIA', 'Americas', 4),
+(default,'NAVI', 'Europa', 2),
+(default,'The MongolZ', 'Asia', 5),
+(default,'Nova Era', 'Americas', NULL);
+
+INSERT INTO jogador_cs VALUES
+(default,'FalleN', 'Gabriel Toledo', 'IGL', 1),
+(default,'KSCERATO', 'Kaike Cerato', 'Rifler', 1),
+(default,'b1t', 'Valerii Vakhovskyi', 'Rifler', 2),
+(default,'w0nderful', 'Ihor Zhdanov', 'AWPer', 2),
+(default,'Techno4K', 'Sodbayar Munkhbold', 'Rifler', 3),
+(default,'mzinho', 'Usukhbayar Banzragch', 'AWPer', 3),
+(default,'Fabs', 'Fabricio', 'Suporte', NULL);
+
+
+/*Parte 3 -- Consultas com SELECT
+Escreva e execute os comandos para:
+
+Exibir o nickname e a funcao de todos os jogadores.
+Exibir apenas os jogadores que atuam como AWPer.
+Exibir as equipes ordenadas pelo ranking em ordem crescente.
+Exibir os jogadores cujo nickname comeca com a letra 'F'.*/
+
+
+SELECT nickname, funcao FROM jogador_cs;
+
+SELECT * FROM jogador_cs
+WHERE funcao = 'AWper';
+
+SELECT * FROM equipe order by ranking;
+
+SELECT * FROM jogador_cs 
+WHERE nickname LIKE 'f%';
+
+/*Parte 4 -- Consultas com AS (Renomear Colunas)
+Escreva e execute os comandos para:
+
+Exibir o nickname como 'Nick' e o nome_real como 'Nome Verdadeiro'.
+Exibir o nome da equipe como 'Time' e a regiao como 'Região Competitiva'.
+Exibir o ranking da equipe como 'Posição no Ranking Mundial'.
+Combinar o nickname e a funcao em uma unica coluna chamada 'Jogador e Função'.*/
+
+SELECT nickname as 'Nick', nome_real as 'Nome Verdadeiro' FROM jogador_cs;
+
+SELECT nome as 'Equipe', regiao as 'Região Competitiva' FROM equipe;
+
+SELECT ranking as 'Posição no Ranking Mundial' from equipe;
+
+SELECT concat(nickname,funcao) as 'Jogador e Função' FROM jogador_cs;
+
+
+/*Parte 5 -- Consultas com CASE
+Escreva e execute os comandos para:
+
+Exibir o nome da equipe e uma coluna 'nivel' usando CASE: equipes com ranking ate 5 devem exibir 'Tier 1', com ranking entre 6 e 20 devem exibir 'Tier 2', e as demais devem exibir 'Tier 3'.
+Exibir o nickname e uma coluna 'tipo_função': jogadores com função Rifler ou Entry devem exibir 'Agressivo', AWPer deve exibir 'Sniper', e os demais devem exibir 'Tático'.
+Exibir o nome da equipe e uma coluna 'continente': equipes da região Americas devem exibir 'Ocidente'; as demais devem exibir 'Oriente'.
+Exibir o nickname e uma coluna 'líder': quando a função do jogador for IGL, exibir 'Sim - In-Game Leader'; caso contrario, exibir 'Não'.*/
+
+
+SELECT nome,
+	case
+		when ranking <= 5 then 'Tier 1'
+        when ranking <= 20 then 'Tier 2'
+			else 'Tier 3'
+	end as nivel
+    from equipe;
+    
+SELECT nickname, 
+	case 
+		when funcao = 'Rifler' or funcao = 'Entry' then  'Agressivo'
+		when funcao = 'AWPer' then 'Sniper'
+    else 'Tático'
+end as tipo_funcao
+FROM jogador_cs;
+
+SELECT nome, 
+	case
+    when regiao = 'Americas' then 'Ocidente' 
+    else 'Oriente'
+end as continente
+FROM equipe;
+
+
+SELECT nickname, 
+	case 
+		when funcao = 'IGL' THEN  'Sim - In-Game Leader'
+        else 'Não'
+    end as lider
+FROM jogador_cs;
+
+/*Parte 6 -- Consultas com IFNULL e JOIN
+Escreva e execute os comandos para:
+
+Exibir o nome da equipe e substituir o campo ranking nulo por 'Sem ranking' usando IFNULL.
+Fazer um LEFT JOIN entre jogador_cs e equipe e substituir o nome da equipe por 'FREE AGENT' quando o jogador não estiver associado a nenhuma equipe.
+Fazer um INNER JOIN entre jogador_cs e equipe para exibir o nickname, a função e o nome da equipe.
+Fazer um INNER JOIN entre jogador_cs e equipe e combinar as colunas em uma unica coluna chamada 'perfil', no formato "Nickname - Função - Equipe".
+Fazer um RIGHT JOIN entre jogador_cs e equipe para exibir todas as equipes, inclusive as sem jogadores cadastrados.*/
+
+SELECT nome, ifnull(ranking, 'Sem ranking') as ranking from equipe;
+
+SELECT *, ifnull(equipe.nome, 'FREE AGENT') AS NOMES FROM jogador_cs
+	LEFT JOIN equipe ON fkEquipe = idEquipe;
+    
+SELECT jogador_cs.nickname, jogador_cs.funcao, equipe.nome FROM jogador_cs
+JOIN  equipe on fkEquipe = idEquipe;
+
+SELECT concat(jogador_cs.nickname, ' | ', jogador_cs.funcao, ' | ',equipe.nome) as perfil FROM jogador_cs
+JOIN  equipe on fkEquipe = idEquipe;
+
+SELECT *  FROM jogador_cs
+right JOIN equipe ON fkEquipe = idEquipe;
+
+/*6. Loja de Tênis*/
+
+/*Parte 1 -- Criar as Tabelas com Constraints
+Escreva e execute os comandos para criar as tabelas abaixo. Para cada coluna, escolha o tipo de dado e as constraints mais adequadas de acordo com a descrição.*/
+CREATE TABLE marca (
+    idMarca INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(45),
+    pais_origem VARCHAR(45)
+);
+ 
+CREATE TABLE tenis (
+    idTenis INT PRIMARY KEY AUTO_INCREMENT,
+    modelo VARCHAR(45),
+    tamanho INT,
+    preco DECIMAL(10,2),
+    categoria VARCHAR(45),
+    fkMarca INT,
+    CONSTRAINT chk_categoria CHECK (categoria IN ('Corrida', 'Casual', 'Basquete', 'Futebol')),
+    CONSTRAINT fkTenisMarca FOREIGN KEY (fkMarca) REFERENCES marca (idMarca)
+);
+
+
+/*Parte 2 -- Inserir Dados de Exemplo
+Escreva e execute os comandos para:
+
+Inserir pelo menos 3 marcas na tabela marca. Deixe o campo pais_origem de uma marca como nulo.
+Inserir pelo menos 5 tênis, associando cada um a uma marca existente. Deixe pelo menos um tênis sem marca (campo fk_marca nulo).
+Exibir todos os dados das duas tabelas com SELECT.*/
+
+INSERT INTO marca VALUES
+(default, 'Nike', 'Estados Unidos'),
+(default, 'Adidas', 'Alemanha'),
+(default, 'Olympikus', NULL);
+ 
+ 
+INSERT INTO tenis VALUES
+(default,'Air Zoom Pegasus', 42, 799.90, 'Corrida', 1),
+(default,'Air Force 1', 41, 899.90, 'Casual', 1),
+(default,'Ultraboost', 43, 1099.90, 'Corrida', 2),
+(default,'Samba OG', 40, 699.90, 'Casual', 2),
+(default,'Predator Club', 42, 549.90, 'Futebol', 2),
+(default, 'Corre 4', 39, 349.90, 'Corrida', 3),
+(default,'Quadra Genérico', 41, 259.90, 'Basquete', NULL);
+
+
+SELECT * FROM tenis 
+JOIN marca on fkMarca = idMarca;
+
+/*Parte 3 -- Consultas com SELECT
+Escreva e execute os comandos para:
+
+Exibir o modelo e o preco de todos os tênis.
+Exibir apenas os tênis da categoria Corrida.
+Exibir os tênis ordenados pelo preco em ordem decrescente.
+Exibir apenas os tênis com tamanho maior ou igual a 40.*/
+
+SELECT modelo, preco FROM tenis;
+
+SELECT * FROM tenis 
+WHERE categoria = 'Corrida';
+
+SELECT * FROM tenis
+ORDER BY preco;
+
+SELECT * FROM tenis
+WHERE tamanho >= 40;
+
+
+/*Parte 4 -- Consultas com AS (Renomear Colunas)
+Escreva e execute os comandos para:
+
+Exibir o modelo do tênis como 'Produto' e o preco como 'Valor (R$)'.
+Exibir o nome da marca como 'Fabricante' e o pais_origem como 'Pais'.
+Exibir o preco acrescido de 15% como 'Preço com Frete'.
+Combinar o modelo e o tamanho em uma unica coluna chamada 'Descrição do Produto'.*/
+
+
+SELECT modelo AS 'Produto', preco AS 'Valor (R$)'
+FROM tenis;
+
+SELECT nome AS 'Fabricante', pais_origem AS 'Pais'
+FROM marca;
+
+SELECT preco + (preco * 0.15) AS 'Preço com Frete'
+FROM tenis;
+
+SELECT CONCAT(modelo, ' | ', tamanho) AS 'Descrição do Produto'
+FROM tenis;
+
+
+/*Parte 5 -- Consultas com CASE
+Escreva e execute os comandos para:
+
+Exibir o modelo e uma coluna 'faixa_preço' usando CASE: tênis com preço abaixo de R$ 200 devem exibir 'Econômico', entre R$ 200 e R$ 500 devem exibir 'Intermediário', e os demais devem exibir 'Premium'.
+Exibir o modelo e uma coluna 'uso': tênis da categoria Corrida devem exibir 'Esporte - Performance', da categoria Casual devem exibir 'Dia a Dia', e os demais devem exibir 'Esporte - Específico'.
+Exibir o nome da marca e uma coluna 'origem': marcas do Brasil devem exibir 'Nacional'; as demais devem exibir 'Importada'.
+Exibir o modelo e uma coluna 'numeração': tamanhos abaixo de 38 devem exibir 'Pequeno', entre 38 e 42 devem exibir 'Médio', e os demais devem exibir 'Grande'.*/
+
+
+SELECT modelo,
+       CASE
+           WHEN preco < 200 THEN 'Econômico'
+           WHEN preco < 500 THEN 'Intermediário'
+           ELSE 'Premium'
+       END AS 'faixa_preço'
+FROM tenis;
+
+SELECT modelo,
+       CASE categoria
+           WHEN 'Corrida' THEN 'Esporte - Performance'
+           WHEN 'Casual' THEN 'Dia a Dia'
+           ELSE 'Esporte - Específico'
+       END AS uso
+FROM tenis;
+
+SELECT nome,
+       CASE
+           WHEN pais_origem = 'Brasil' THEN 'Nacional'
+           ELSE 'Importada'
+       END AS 'origem'
+FROM marca;
+
+SELECT modelo,
+       CASE
+           WHEN tamanho < 38 THEN 'Pequeno'
+           WHEN tamanho < 42 THEN 'Médio'
+           ELSE 'Grande'
+       END AS 'numeração'
+FROM tenis;
+
+/*Parte 6 -- Consultas com IFNULL e JOIN
+Escreva e execute os comandos para:
+
+Exibir o nome da marca e substituir o campo pais_origem nulo por 'Origem desconhecida' usando IFNULL.
+Fazer um LEFT JOIN entre tenis e marca e substituir o nome da marca por 'MARCA GENERICA' quando não houver associação.
+Fazer um INNER JOIN entre tenis e marca para exibir o modelo do tênis, o preço e o nome da marca.
+Fazer um INNER JOIN entre tenis e marca e combinar as colunas em uma unica coluna chamada 'vitrine', no formato "Modelo - Categoria - Marca".
+Fazer um RIGHT JOIN entre tenis e marca para exibir todas as marcas, inclusive as que não possuem tênis cadastrados.*/
+
+SELECT nome, ifnull(pais_origem,'Origem desconhecida') as pais FROM marca;
+
+SELECT *, ifnull(marca.nome , 'MARCA GENERICA') marca FROM tenis
+LEFT JOIN marca ON fkMarca = idMarca;
+
+SELECT tenis.modelo, tenis.preco, marca.nome FROM tenis
+JOIN marca ON fkMarca = idMarca;
+
+SELECT concat(tenis.modelo, ' | ', tenis.categoria, ' | ', marca.nome) as Vitrine FROM tenis
+JOIN marca ON fkMarca = idMarca;
+
+SELECT * FROM tenis
+ RIGHT JOIN marca ON fkMarca = idMarca;
 
