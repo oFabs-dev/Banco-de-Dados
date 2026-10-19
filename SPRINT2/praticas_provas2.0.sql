@@ -99,8 +99,6 @@ alter table endereco drop constraint fkEnderecoAluno;
 -- palco 1:N participante (fkPalco NOT NULL - nunca fica sem palco)
 -- participante responsável 1:N participante dependente (recursivo)
 -- =====================================================================
-CREATE DATABASE RockInRio;
-USE RockInRio;
 
 CREATE TABLE palco (
     idPalco INT PRIMARY KEY AUTO_INCREMENT,
@@ -149,6 +147,43 @@ INSERT INTO participante (nome, cpf, dtNascimento, telefone, fkPalco, fkResponsa
 ('Miguel Gomes',     '40450560670', '2014-03-07', '21987650013', 3, 4),
 ('Helena Gomes',     '50560670780', '2011-12-24', '21987650014', 3, 4),
 ('Arthur Martins',   '60670780890', '2009-07-30', '11987650015', 4, 5);
+
+
+SELECT * FROM palco
+JOIN participante on idPalco = fkPalco;
+
+UPDATE palco set precoIngresso = '500' 
+WHERE idPalco = 1;
+
+SELECT * FROM palco
+JOIN participante on idPalco = fkPalco
+WHERE precoIngresso > '200';
+
+ALTER TABLE participante ADD COLUMN email VARCHAR(255);
+
+ALTER TABLE participante RENAME COLUMN telefone to contato;
+
+SELECT * FROM palco
+JOIN participante on idPalco = fkPalco
+where fkResponsavel is null;
+
+SELECT * FROM participante as p
+join participante as dep on p.fkResponsavel = dep.idParticipante;
+
+
+
+
+
+SELECT p.nome, p.capacidade FROM palco as p
+JOIN participante as par on idPalco = fkPalco
+where precoIngresso <= 150;
+
+
+SELECT par.nome, p.nome FROM palco AS P
+JOIN participante as par ON idPalco = fkPalco
+where p.nome like 'S%';
+
+
 
 
 -- =====================================================================
@@ -209,6 +244,20 @@ INSERT INTO pokemon (nome, altura, peso, lendario, tipo, fkTreinador) VALUES
 ('Machop',     0.80,  19.50, FALSE, 'Lutador',  6),
 ('Moltres',    2.00,  60.00, TRUE,  'Fogo',     3),
 ('Zapdos',     1.60,  52.60, TRUE,  'Elétrico', 4);
+
+
+SELECT * FROM pokemon join treinador on idTreinador = fkTreinador;
+
+ALTER TABLE pokemon MODIFY column lendario BOOLEAN not null;
+
+SELECT ifnull(p.peso,'Muito leve') as peso , p.nome, t.nome FROM treinador as t
+join pokemon as p on t.idTreinador = p.fkTreinador;
+
+
+SELECT 
+
+
+
 
 
 -- =====================================================================
