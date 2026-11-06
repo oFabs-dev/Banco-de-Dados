@@ -254,8 +254,53 @@ SELECT ifnull(p.peso,'Muito leve') as peso , p.nome, t.nome FROM treinador as t
 join pokemon as p on t.idTreinador = p.fkTreinador;
 
 
-SELECT 
+SELECT p.nome, t.nome,
+case
+	when p.nome = 'Pikachu' then 'RATO AMARELO DOS RAIOS'
+    when p.nome = 'Charmander' then 'DRAGÃO DO FOGO'
+    when p.nome = 'Squirtle' then 'BICHO DAS AGUAS'
+end as Comentario
+FROM treinador as t
+join pokemon as p on t.idTreinador = p.fkTreinador limit 3;
 
+SELECT t.nome, pt.nome, m.nome, pm.nome FROM treinador as t
+join pokemon as pt on t.idTreinador = pt.fkTreinador
+left join treinador as m on m.idTreinador = t.fkMentor 
+left join pokemon as pm on m.idTreinador = pm.fkTreinador;
+
+SELECT t.nome, pt.nome, m.nome, pm.nome FROM pokemon as pt
+left join treinador as t on t.idTreinador = pt.fkTreinador
+left join treinador as m on m.idTreinador = t.fkMentor
+left join pokemon as pm on pm.fkTreinador = m.idTreinador;
+
+
+
+SELECT 
+    p.nome AS 'Pokémon',
+    t.nome AS Treinador,
+    m.nome AS Mentor
+FROM pokemon AS p
+JOIN treinador AS t ON t.idTreinador = p.fkTreinador
+JOIN treinador AS m ON m.idTreinador = t.fkMentor
+WHERE p.nome LIKE '%e%';
+
+
+SELECT concat(p.nome, '|' , t.nome, '|' , m.nome) as geral FROM treinador as t
+join pokemon as p on t.idTreinador = p.fkTreinador
+join treinador as m on m.idTreinador = t.fkMentor;
+
+ALTER TABLE treinador DROP CONSTRAINT chkIdade ;
+
+
+SELECT p.nome, p.tipo , t.nome FROM treinador as t
+right join pokemon as p ON t.idTreinador = p.fkTreinador
+WHERE (p.tipo = 'Agua' or p.tipo = 'Fogo' ) and (p.altura > 1.00);
+
+
+SELECT m.nome, p.nome from pokemon as p
+join treinador as t on t.idTreinador = p.fkTreinador
+join treinador as m on m.idTreinador = t.fkMentor
+order by altura desc;
 
 
 
@@ -334,6 +379,69 @@ INSERT INTO aluguel (fkCliente, fkProduto, dataRetirada, dataDevolucao) VALUES
 (2, 1, '2026-10-12', NULL);           -- em aberto
 
 
+SELECT c.nome, p.titulo, a.dataRetirada, a.dataDevolucao FROM cliente as c
+join aluguel as a on c.idCliente = a.fkCliente
+join produto as p on p.idProduto = a.fkProduto;
+
+
+ SELECT c.nome, p.titulo, p.preco from cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ where p.preco > 15;
+ 
+ 
+ SELECT c.nome, p.titulo, p.preco from cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ where dataDevolucao is null;
+ 
+  SELECT c.nome, p.titulo,
+   case 
+	when dataDevolucao is null then 'Em aberto'
+    when dataDevolucao is not null  then 'Concluido'
+end as Situacao 
+  FROM cliente as c
+  join aluguel as a on c.idCliente = a.fkCliente
+  join produto as p on p.idProduto = a.fkProduto;
+ 
+ SELECT c.nome, p.titulo FROM cliente as c
+ left join aluguel as a on c.idCliente = a.fkCliente
+ left join produto as p on p.idProduto = a.fkProduto;
+ 
+ 
+ 
+ SELECT c.nome, p.titulo, p.plataforma FROM cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ where p.genero = 'Esporte';
+ 
+ 
+ 
+ ALTER TABLE produto rename column condicaoProduto to condicao;
+ 
+ SELECT c.nome, p.titulo FROM cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ where p.titulo like 'M%';
+ 
+  SELECT c.nome, p.titulo FROM cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ order by c.nome;
+ 
+ SELECT c.nome, p.titulo FROM cliente as c
+ join aluguel as a on c.idCliente = a.fkCliente
+ join produto as p on p.idProduto = a.fkProduto
+ limit 3;
+ 
+ SELECT c.nome, p.titulo FROM produto as p
+ left join aluguel as a on p.idProduto = a.fkProduto
+ left join cliente as c on c.idCliente = a.fkCliente;
+ 
+ alter table aluguel drop foreign key fkAluguelCliente;
+ 
+ 
+
 -- =====================================================================
 -- 5 - HOGWARTS
 -- casa 1:N aluno (aluno começa sem casa -> fkCasa NULL)
@@ -386,3 +494,46 @@ INSERT INTO aluno (ra, nome, jogadorQuadribol, dtInicio, dtTermino, pet, patrono
 ('A0012', 'Penélope Clearwater','não', '1987-09-01', '1994-06-30', NULL,                   NULL),
 ('A0013', 'Gemma Farley',       'não', '1987-09-01', '1994-06-30', 'Gato preto',           NULL),
 ('A0014', 'Ernesto Macmillan',  'não', '1991-09-01', '1998-06-30', NULL,                   NULL);
+
+
+SELECT * FROM aluno
+WHERE jogadorQuadribol = 'sim';
+
+
+UPDATE aluno SET fkCasa = 1 WHERE ra IN ('A0001','A0002','A0003','A0005','A0007','A0011');
+UPDATE aluno SET fkCasa = 2 WHERE ra IN ('A0004','A0013');
+UPDATE aluno SET fkCasa = 3 WHERE ra IN ('A0006','A0009','A0012');
+UPDATE aluno SET fkCasa = 4 WHERE ra IN ('A0008','A0010','A0014');
+
+
+-- Percy (A0011) -> Grifinória
+UPDATE aluno SET fkMonitor = 'A0011' WHERE ra IN ('A0001','A0002','A0003');
+-- Gemma Farley (A0013) -> Sonserina
+UPDATE aluno SET fkMonitor = 'A0013' WHERE ra = 'A0004';
+-- Penélope Clearwater (A0012) -> Corvinal
+UPDATE aluno SET fkMonitor = 'A0012' WHERE ra IN ('A0006','A0009');
+-- Cedrico Diggory (A0008) -> Lufa-Lufa
+UPDATE aluno SET fkMonitor = 'A0008' WHERE ra IN ('A0010','A0014');
+
+
+SELECT a.nome as NomeAluno, a.dtInicio, a.patrono, c.nome FROM casa as c
+JOIN aluno as a on c.idCasa = fkCasa
+where c.nome = 'Lufa-Lufa';
+
+SELECT a.nome, a.pet, c.nome FROM casa as c
+join aluno as a on c.idCasa = a.fkCasa;
+
+
+SELECT m.nome as Monitor_Responsavel, a.nome, c.nome FROM casa as c
+join aluno as a on c.idCasa = a.fkCasa
+join aluno as m on m.ra = a.fkMonitor;
+
+SELECT a.nome, IFNULL(c.nome,'aluno não alocado'), a.JogadorQuadribol, ifnull(a.pet, 'Nenhum pet'),
+ ifnull(a.patrono, 'não é feliz') FROM aluno as a
+left join casa as c on c.idCasa = a.fkCasa;
+
+SELECT a.nome, a.dtTermino, c.* FROM casa as c
+JOIN aluno as a ON c.idCasa = a.fkCasa;
+
+SELECT a.nome, ifnull(m.nome,'tem caroço') FROM aluno as a
+left join aluno as m on m.ra = a.fkMonitor;

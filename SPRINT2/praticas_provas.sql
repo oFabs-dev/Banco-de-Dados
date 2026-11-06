@@ -281,6 +281,13 @@ INSERT INTO categoria VALUES
   
 SELECT f.nome as subCtg, p.nome as princCtg from categoria as f
 join categoria as p on p.id_categoria = f.fk_categoria_pai;
+
+
+CREATE DATABASE infoconnect;
+USE infoconnect;
+
+
+
   
   
   
