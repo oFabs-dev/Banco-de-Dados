@@ -89,17 +89,27 @@ INSERT INTO participacao (fkLeitor, fkClube, dataIngresso, qtdEncontros) VALUES
  
  SELECT l.titulo, g.nome FROM livro as l
  join genero as g on l.fkGenero = g.idGenero
- WHERE l.titulo LIKE 'a%' 
+ WHERE l.titulo LIKE '%a%' and l.anoPublicacao > '2015-01-01' 
  order by l.numPaginas;
  
- SELECT count(idLivro), MIN(numPaginas), MAX(numPaginas), TRUNCATE(AVG(numPaginas),2) FROM li vro;
+ SELECT count(idLivro), MIN(numPaginas), MAX(numPaginas), TRUNCATE(AVG(numPaginas),1) FROM livro;
+ 
+ SELECT c.nome, count(p.fkClube) FROM participacao as p
+ JOIN clube as c on c.idClube = p.fkClube
+ GROUP BY c.nome;
+ 
+ SELECT l.nome, count(p.fkClube) FROM leitor as l
+ left join participacao as p on l.idLeitor = p.fkLeitor
+ group by l.nome;
+ 
+ SELECT c.nome,	truncate(avg(p.qtdEncontros), 1) from participacao as p
+ join clube as c on c.idClube = p.fkClube
+ group by c.nome;
+ 
  
 -- =====================================================================
 -- EXERCÍCIO 2 - Academia
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio02;
-CREATE DATABASE exercicio02;
-USE exercicio02;
  
 CREATE TABLE nivelIntensidade (
     idNivel INT PRIMARY KEY AUTO_INCREMENT,
@@ -109,8 +119,8 @@ CREATE TABLE nivelIntensidade (
 CREATE TABLE modalidade (
     idModalidade INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL,
-    fkNivel INT -- FK -> nivelIntensidade(idNivel)
- 
+    fkNivel INT,
+    constraint fkNivel_intensidade foreign key (fkNivel) references nivelIntensidade(idNivel)
 );
  
 CREATE TABLE aluno (
@@ -127,19 +137,25 @@ CREATE TABLE instrutor (
 );
  
 CREATE TABLE aula (
-    idAula INT PRIMARY KEY AUTO_INCREMENT,
-    fkInstrutor INT,  -- FK -> instrutor(idInstrutor)
-    fkModalidade INT, -- FK -> modalidade(idModalidade)
+    idAula INT AUTO_INCREMENT,
+    fkInstrutor INT, 
+    constraint fk_inst_aula foreign key (fkInstrutor) references instrutor(idInstrutor),
+    fkModalidade INT,
+    constraint fk_modal_aula foreign key (fkModalidade) references modalidade(idModalidade),
     diaSemana VARCHAR(15),
-    duracaoMin INT
+    duracaoMin INT,
+    constraint pk_aula primary key(idAula, fkInstrutor, fkModalidade)
  
 );
  
 CREATE TABLE matricula (
-    idMatricula INT PRIMARY KEY AUTO_INCREMENT,
-    fkAluno INT,      -- FK -> aluno(idAluno)
-    fkModalidade INT, -- FK -> modalidade(idModalidade)
-    dtMatricula DATE
+    idMatricula INT AUTO_INCREMENT,
+    fkAluno INT,      
+    constraint fkMatri_aluno foreign key (fkAluno) references aluno(idAluno),
+    fkModalidade INT, 
+     constraint fkMatri_modal foreign key (fkModalidade) references modalidade(idModalidade),
+    dtMatricula DATE,
+    constraint pk_matricula primary key( idMatricula, fkAluno, fkModalidade)
  
 );
  
@@ -197,14 +213,47 @@ INSERT INTO matricula (fkAluno, fkModalidade, dtMatricula) VALUES
 (5, 2, '2026-04-10'),
 (2, 4, '2026-05-01'),
 (6, 4, '2026-05-08');
+
+
+ALTER TABLE modalidade
+    ADD COLUMN qtd_max_alunos INT DEFAULT 20,
+    ADD CONSTRAINT chk_qtd_max_alunos CHECK (qtd_max_alunos > 0);
+
+
+UPDATE modalidade SET qtd_max_alunos = 30 WHERE idModalidade = 1;
+UPDATE modalidade SET qtd_max_alunos = 15 WHERE idModalidade = 2;
+
+SELECT m.nome, i.nome, a.diaSemana, a.duracaoMin FROM aula as a
+join modalidade as m on m.idModalidade = a.fkModalidade
+join instrutor as i on i.idInstrutor = a.fkInstrutor;
+
+SELECT a.nome, count(mo.nome) FROM matricula as m
+join modalidade as mo on mo.idModalidade = m.fkModalidade
+join aluno as a on a.idAluno = m.fkAluno
+group by a.nome; 
+
+SELECT i.nome, count(m.nome), truncate(avg(a.duracaoMin),1) FROM aula as a
+JOIN instrutor as i on i.idInstrutor = a.fkInstrutor
+join modalidade as m on m.idModalidade = a.fkModalidade
+group by i.nome;
+
+SELECT m.nome AS modalidade,
+       COUNT(DISTINCT ma.fkAluno)     AS qtd_alunos,
+       COUNT(DISTINCT a.fkInstrutor)  AS qtd_instrutores
+FROM modalidade AS m
+JOIN matricula AS ma ON m.idModalidade = ma.fkModalidade
+JOIN aula      AS a  ON m.idModalidade = a.fkModalidade
+GROUP BY m.idModalidade, m.nome
+HAVING COUNT(DISTINCT ma.fkAluno) > 3;
  
+SELECT i.nome, count(a.fkInstrutor), i.valorAula * count(a.fkInstrutor) FROM aula as a
+join instrutor as i on i.idInstrutor = a.fkInstrutor
+group by i.idInstrutor;
  
 -- =====================================================================
 -- EXERCÍCIO 3 - Festival cultural
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio03;
-CREATE DATABASE exercicio03;
-USE exercicio03;
+
  
 CREATE TABLE artista (
     idArtista INT PRIMARY KEY AUTO_INCREMENT,
@@ -212,30 +261,36 @@ CREATE TABLE artista (
     paisOrigem VARCHAR(45),
     anoEstreia INT
 );
- 
+
 CREATE TABLE palco (
     idPalco INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL,
     capacidade INT
 );
- 
+
 CREATE TABLE apresentacao (
     idApresentacao INT PRIMARY KEY AUTO_INCREMENT,
     dtApresentacao DATE,
     horaInicio TIME,
     duracaoMin INT,
-    fkPalco INT -- FK -> palco(idPalco)
- 
+    fkPalco INT,
+    CONSTRAINT fkPalco_aprese FOREIGN KEY (fkPalco)
+        REFERENCES palco(idPalco)
 );
- 
+
 CREATE TABLE participacao (
-    idParticipacao INT PRIMARY KEY AUTO_INCREMENT,
-    fkArtista INT,      -- FK -> artista(idArtista)
-    fkApresentacao INT, -- FK -> apresentacao(idApresentacao)
-    cache DECIMAL(10,2)
- 
+    idParticipacao INT AUTO_INCREMENT,
+    fkArtista INT,
+    fkApresentacao INT,
+    cachee DECIMAL(10,2),
+    CONSTRAINT pkParticipacao PRIMARY KEY (idParticipacao, fkArtista, fkApresentacao),
+    CONSTRAINT fkArtista_partic FOREIGN KEY (fkArtista)
+        REFERENCES artista(idArtista),
+    CONSTRAINT fkApresentacao_partic FOREIGN KEY (fkApresentacao)
+        REFERENCES apresentacao(idApresentacao)
 );
- 
+
+
 INSERT INTO artista (nomeArtistico, paisOrigem, anoEstreia) VALUES
 ('Luna Vega',          'Espanha',  2015),
 ('Banda Maré Alta',    'Brasil',   2010),
@@ -267,7 +322,7 @@ INSERT INTO apresentacao (dtApresentacao, horaInicio, duracaoMin, fkPalco) VALUE
 ('2026-07-12', '23:30:00', 120, 3),
 ('2026-07-10', '15:00:00', 45, 4);
  
-INSERT INTO participacao (fkArtista, fkApresentacao, cache) VALUES
+INSERT INTO participacao (fkArtista, fkApresentacao, cachee) VALUES
 (2, 1, 6000.00), (6, 1, 3500.00),
 (1, 2, 4000.00),
 (4, 3, 3000.00), (8, 3, 2500.00),
@@ -282,14 +337,51 @@ INSERT INTO participacao (fkArtista, fkApresentacao, cache) VALUES
 (4, 12, 1200.00), (8, 12, 900.00);
  
  
+ 
+ SELECT a.nomeArtistico, pa.nome, ap.dtApresentacao, p.cachee FROM participacao as p
+ join artista as a on a.idArtista = p.fkArtista
+ join apresentacao as ap on ap.idApresentacao = p.fkApresentacao
+ join palco as pa on pa.idPalco = ap.fkPalco;
+ 
+ 
+ SELECT a.nomeArtistico, count(fkArtista) FROM participacao as p
+ join artista as a on a.idArtista = p.fkArtista
+  WHERE anoEstreia < 2020
+ group by a.idArtista;
+ 
+ SELECT pa.nome, count(ap.idApresentacao), sum(p.cachee) FROM participacao as p
+  join apresentacao as ap on ap.idApresentacao = p.fkApresentacao
+ join palco as pa on pa.idPalco = ap.fkPalco
+ join artista as a on a.idArtista = p.fkArtista
+ group by pa.idPalco;
+ 
+ 
+ SELECT a.nomeArtistico, min(pa.cachee), max(pa.cachee), truncate(avg(pa.cachee), 2) FROM participacao as pa
+ join artista as a on a.idArtista = pa.fkArtista
+ group by a.idArtista;  
+ 
+ SELECT p.nome , sum(pa.cachee), count(pa.fkArtista) FROM palco as p 
+ join apresentacao as ap on p.idPalco = ap.fkPalco
+ join participacao as pa on ap.idApresentacao = pa.fkApresentacao
+ group by pa.fkApresentacao
+ having sum(pa.cachee) > 5000;
+ 
+ SELECT p.nome, 
+ case
+	when count(idApresentacao) = 0 then 'Sem apresentação'
+    when  count(idApresentacao) <= 2 then 'Baixa utilização '
+    else 'Alta utilização'
+end as statuss
+ FROM apresentacao as ap left join palco as p on p.idPalco = ap.fkPalco
+ group by p.idPalco;
+ 
+ 
+ 
 -- =====================================================================
 -- EXERCÍCIO 4 - Laboratório de pesquisa
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio04;
-CREATE DATABASE exercicio04;
-USE exercicio04;
  
-CREATE TABLE area (
+CREATE TABLE areaPesq (
     idArea INT PRIMARY KEY AUTO_INCREMENT,
     descricao VARCHAR(60) NOT NULL
 );
@@ -307,30 +399,37 @@ CREATE TABLE situacao (
 CREATE TABLE pesquisador (
     idPesquisador INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL,
-    fkArea INT,      -- FK -> area(idArea)
-    fkTitulacao INT  -- FK -> titulacao(idTitulacao)
- 
+    fkArea INT,  
+    constraint fkArea_pesq foreign key (fkArea) references areaPesq(idArea),
+    fkTitulacao INT,
+    constraint fkTitul_pesq foreign key (fkTitulacao) references titulacao(idTitulacao)
 );
+
  
 CREATE TABLE projeto (
     idProjeto INT PRIMARY KEY AUTO_INCREMENT,
     titulo VARCHAR(100) NOT NULL,
     orcamentoPrevisto DECIMAL(12,2),
     dtInicio DATE,
-    fkSituacao INT -- FK -> situacao(idSituacao)
+    fkSituacao INT,
+    constraint fkSituacao_prjt foreign key (fkSituacao) references situacao(idSituacao)
  
 );
+ 
  
 CREATE TABLE participacao (
-    idParticipacao INT PRIMARY KEY AUTO_INCREMENT,
-    fkPesquisador INT, -- FK -> pesquisador(idPesquisador)
-    fkProjeto INT,     -- FK -> projeto(idProjeto)
+    idParticipacao INT AUTO_INCREMENT,
+    fkPesquisador INT, 
+    constraint fkPesq_Part foreign key (fkPesquisador) references pesquisador(idPesquisador),
+    fkProjeto INT,   
+	constraint fkProje_part foreign key (fkPesquisador) references pesquisador(idPesquisador),
     horasDedicadas INT,
-    valorHora DECIMAL(8,2)
- 
+    valorHora DECIMAL(8,2),
+    constraint pkGrupo primary key (idParticipacao,fkPesquisador , fkProjeto)
+
 );
  
-INSERT INTO area (descricao) VALUES
+INSERT INTO areaPesq (descricao) VALUES
 ('Biologia'), ('Química'), ('Engenharia');
  
 INSERT INTO titulacao (descricao) VALUES
@@ -370,16 +469,50 @@ INSERT INTO participacao (fkPesquisador, fkProjeto, horasDedicadas, valorHora) V
 (5, 4, 100,  70.00),
 (1, 5,  90,  80.00),
 (5, 5,  60,  70.00);
+
+
+ALTER TABLE projeto ADD COLUMN orcamentoMax decimal(6,2),
+add constraint orcamentoNegativo check (orcamentoMax > 0);
+
+alter table projeto 
+add constraint previstoNegativo check (orcamentoPrevisto > 0);
+
+SELECT p.nome, pr.titulo, a.descricao, pa.horasDedicadas, pa.valorHora *  pa.horasDedicadas FROM participacao as pa
+join pesquisador as p on p.idPesquisador = pa.fkPesquisador
+join areaPesq as a on a.idArea = p.fkArea
+join projeto as pr on pr.idProjeto = pa.fkProjeto;
+
+ SELECT p.titulo, count(pa.fkPesquisador), sum(pa.horasDedicadas), sum(pa.horasDedicadas * pa.valorHora) FROM participacao as pa
+ join projeto as p on p.idProjeto = pa.fkProjeto
+ group by pa.fkProjeto;
  
+ 
+SELECT a.descricao, count(p.fkArea), count(distinct pa.fkPesquisador), avg(pa.horasDedicadas) FROM participacao as pa
+join pesquisador as p on p.idPesquisador = pa.fkPesquisador 
+join areaPesq as a on a.idArea = p .fkArea
+group by a.idArea;
+
+ SELECT p.titulo, p.orcamentoPrevisto, truncate( (sum(pa.horasDedicadas * pa.valorHora) * 100 / p.orcamentoPrevisto), 2) FROM participacao as pa
+ join projeto as p on p.idProjeto = pa.fkProjeto
+ group by pa.fkProjeto
+ having sum(pa.horasDedicadas * pa.valorHora) > p.orcamentoPrevisto * 0.7;
+
+
+ SELECT p.titulo, s.descricao,
+ case
+	when orcamentoPrevisto is NULL then 'Sem custo'
+    when sum(pa.horasDedicadas * pa.valorHora) <= orcamentoPrevisto then 'Dentro do orçamento'
+    else 'Acima do orçamento'
+end as statuss
+ FROM projeto as p left join participacao as pa on p.idProjeto = pa.fkProjeto
+ left join situacao as s on s.idSituacao = p.fkSituacao
+ group by p.idProjeto;
  
 -- =====================================================================
 -- EXERCÍCIO 5 - Plataforma de cursos livres
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio05;
-CREATE DATABASE exercicio05;
-USE exercicio05;
  
-CREATE TABLE area (
+CREATE TABLE areaCurso (
     idArea INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL
 );
@@ -393,8 +526,8 @@ CREATE TABLE curso (
     idCurso INT PRIMARY KEY AUTO_INCREMENT,
     titulo VARCHAR(100) NOT NULL,
     cargaHoraria INT,
-    fkArea INT -- FK -> area(idArea)
- 
+    fkArea INT,
+    constraint fkCurso_area foreign key (fkArea) references areaCurso(idArea)
 );
  
 CREATE TABLE estudante (
@@ -407,29 +540,34 @@ CREATE TABLE estudante (
 CREATE TABLE instrutor (
     idInstrutor INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL,
-    fkEspecialidade INT -- FK -> especialidade(idEspecialidade)
+    fkEspecialidade INT,
+    constraint fk_inst_espe foreign key (fkEspecialidade) references especialidade(idEspecialidade)
  
 );
  
 CREATE TABLE atuacao (
-    idAtuacao INT PRIMARY KEY AUTO_INCREMENT,
-    fkInstrutor INT, -- FK -> instrutor(idInstrutor)
-    fkCurso INT,     -- FK -> curso(idCurso)
-    remuneracao DECIMAL(10,2)
- 
+    idAtuacao INT AUTO_INCREMENT,
+    fkInstrutor INT, 
+     constraint fk_atua_ist foreign key ( fkInstrutor) references instrutor(idInstrutor),
+    fkCurso INT,     
+     constraint fk_atua_curs foreign key (fkCurso) references curso(idCurso),
+    remuneracao DECIMAL(10,2),
+    constraint pkGrupo primary key (idAtuacao, fkInstrutor, fkCurso)
 );
  
 CREATE TABLE inscricao (
-    idInscricao INT PRIMARY KEY AUTO_INCREMENT,
-    fkEstudante INT, -- FK -> estudante(idEstudante)
-    fkCurso INT,     -- FK -> curso(idCurso)
+    idInscricao INT AUTO_INCREMENT,
+    fkEstudante INT, 
+     constraint fk_isc_est foreign key (fkEstudante) references estudante(idEstudante),
+    fkCurso INT, 
+     constraint fk_insc_crs foreign key (fkCurso) references curso(idCurso),
     dtInscricao DATE,
     notaFinal DECIMAL(4,2),
-    frequencia DECIMAL(5,2)
- 
+    frequencia DECIMAL(5,2),
+    constraint pkGrupo primary key (idInscricao, fkEstudante, fkCurso)
 );
  
-INSERT INTO area (nome) VALUES
+INSERT INTO areaCurso (nome) VALUES
 ('Tecnologia'), ('Negócios'), ('Design'), ('Idiomas');
  
 INSERT INTO especialidade (nome) VALUES
@@ -490,14 +628,65 @@ INSERT INTO inscricao (fkEstudante, fkCurso, dtInscricao, notaFinal, frequencia)
 (8, 5, '2026-05-01', 9.00, 95.00),
 (9, 5, '2026-05-03', 5.00, 80.00),
 (10, 5, '2026-05-04', 7.20, 65.00);
- 
+
+
+SELECT e.nome, c.titulo, i.notaFinal, i.frequencia FROM inscricao as i
+join estudante as e on e.idEstudante = i.fkCurso
+join curso as c on c.idCurso = i.fkCurso;
+
+SELECT c.titulo, count(i.fkEstudante), min(i.notaFinal), max(i.notaFinal), truncate(avg(i.notaFinal),1) FROM inscricao as i
+JOIN curso as c ON c.idCurso = i.fkCurso
+group by c.idCurso;
+
+
+SELECT c.titulo,
+       COUNT(i.fkEstudante) AS qtdAprovados
+FROM inscricao AS i
+JOIN curso AS c ON c.idCurso = i.fkCurso
+WHERE i.notaFinal >= 6 AND i.frequencia >= 75
+GROUP BY c.idCurso, c.titulo
+HAVING COUNT(i.fkEstudante) >= 3;
+
+
+SELECT ins.nome AS instrutor,
+       e.nome AS especialidade,
+       COUNT(DISTINCT a.fkCurso) AS qtdCursos,
+       SUM(a.remuneracao) AS totalRemuneracao
+FROM atuacao AS a
+JOIN instrutor AS ins ON ins.idInstrutor = a.fkInstrutor
+JOIN especialidade AS e ON e.idEspecialidade = ins.fkEspecialidade
+GROUP BY ins.idInstrutor, ins.nome, e.nome
+HAVING COUNT(DISTINCT a.fkCurso) > 1;
+
+
+ SELECT CASE
+           WHEN notaFinal >= 6 AND frequencia >= 75 THEN 'Aprovado'
+           WHEN frequencia < 75 THEN 'Reprovado por frequência'
+           ELSE 'Reprovado por nota'
+       END AS resultado,
+       COUNT(*) AS qtdInscricoes
+FROM inscricao
+WHERE notaFinal IS NOT NULL AND frequencia IS NOT NULL
+GROUP BY resultado;
+
+SELECT ac.nome AS area,
+       COUNT(DISTINCT c.idCurso) AS qtdCursos,
+       COUNT(DISTINCT i.fkEstudante) AS qtdEstudantes,
+       ROUND(AVG(i.notaFinal), 2) AS mediaNotas,
+       ROUND(
+           SUM(CASE WHEN i.notaFinal >= 6 AND i.frequencia >= 75 THEN 1 ELSE 0 END) * 100
+           / NULLIF(COUNT(CASE WHEN i.notaFinal IS NOT NULL AND i.frequencia IS NOT NULL THEN 1 END), 0)
+       , 2) AS percentualAprovados
+FROM areaCurso AS ac
+LEFT JOIN curso AS c ON c.fkArea = ac.idArea
+LEFT JOIN inscricao AS i ON i.fkCurso = c.idCurso
+GROUP BY ac.idArea, ac.nome;
+
+
  
 -- =====================================================================
 -- EXERCÍCIO 6 - Clínicas veterinárias
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio06;
-CREATE DATABASE exercicio06;
-USE exercicio06;
  
 CREATE TABLE tutor (
     idTutor INT PRIMARY KEY AUTO_INCREMENT,
@@ -505,60 +694,64 @@ CREATE TABLE tutor (
     telefone VARCHAR(20),
     cidade VARCHAR(60)
 );
- 
+
 CREATE TABLE especie (
     idEspecie INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(45) NOT NULL
 );
- 
+
 CREATE TABLE animal (
     idAnimal INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(45) NOT NULL,
     peso DECIMAL(6,2),
     dtNascimento DATE,
-    fkTutor INT,   -- FK -> tutor(idTutor)
-    fkEspecie INT  -- FK -> especie(idEspecie)
- 
+    fkTutor INT,
+    fkEspecie INT,
+    CONSTRAINT fkAnimalTutor FOREIGN KEY (fkTutor) REFERENCES tutor(idTutor),
+    CONSTRAINT fkAnimalEspecie FOREIGN KEY (fkEspecie) REFERENCES especie(idEspecie)
 );
- 
+
 CREATE TABLE especialidade (
     idEspecialidade INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL
 );
- 
+
 CREATE TABLE veterinario (
     idVeterinario INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL,
-    fkEspecialidade INT -- FK -> especialidade(idEspecialidade)
- 
+    fkEspecialidade INT,
+    CONSTRAINT fkVetEspecialidade FOREIGN KEY (fkEspecialidade) REFERENCES especialidade(idEspecialidade)
 );
- 
+
 CREATE TABLE situacao (
     idSituacao INT PRIMARY KEY AUTO_INCREMENT,
     descricao VARCHAR(45) NOT NULL
 );
- 
+
 CREATE TABLE procedimento (
     idProcedimento INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL
 );
- 
+
 CREATE TABLE atendimento (
     idAtendimento INT PRIMARY KEY AUTO_INCREMENT,
     dtAtendimento DATE,
-    fkSituacao INT,    -- FK -> situacao(idSituacao)
-    fkAnimal INT,      -- FK -> animal(idAnimal)
-    fkVeterinario INT  -- FK -> veterinario(idVeterinario)
- 
+    fkSituacao INT,
+    fkAnimal INT,
+    fkVeterinario INT,
+    CONSTRAINT fkAtendSituacao FOREIGN KEY (fkSituacao) REFERENCES situacao(idSituacao),
+    CONSTRAINT fkAtendAnimal FOREIGN KEY (fkAnimal) REFERENCES animal(idAnimal),
+    CONSTRAINT fkAtendVeterinario FOREIGN KEY (fkVeterinario) REFERENCES veterinario(idVeterinario)
 );
- 
+
 CREATE TABLE atendimentoProcedimento (
     idAtendimentoProcedimento INT PRIMARY KEY AUTO_INCREMENT,
-    fkAtendimento INT,  -- FK -> atendimento(idAtendimento)
-    fkProcedimento INT, -- FK -> procedimento(idProcedimento)
+    fkAtendimento INT,
+    fkProcedimento INT,
     valorUnitario DECIMAL(10,2),
-    quantidade INT
- 
+    quantidade INT,
+    CONSTRAINT fkAPAtendimento FOREIGN KEY (fkAtendimento) REFERENCES atendimento(idAtendimento),
+    CONSTRAINT fkAPProcedimento FOREIGN KEY (fkProcedimento) REFERENCES procedimento(idProcedimento)
 );
  
 INSERT INTO tutor (nome, telefone, cidade) VALUES
@@ -634,54 +827,107 @@ INSERT INTO atendimentoProcedimento (fkAtendimento, fkProcedimento, valorUnitari
 (10, 1, 130.00, 1), (10, 2, 95.00, 2),
 (11, 6, 300.00, 1), (11, 1, 120.00, 1),
 (13, 1, 120.00, 1);
- 
+
+select a.nome, t.nome,e.nome, count(idAtendimento) from animal as a
+left join tutor as t on t.idTutor = a.fkTutor
+left join especie as e on e.idEspecie  = a.fkEspecie
+left join atendimento as ated on a.idAnimal = ated.fkAnimal
+group by idAnimal;
+
+SELECT v.nome, e.nome, count(distinct a.fkAnimal) FROM veterinario as v
+join especialidade as e on e.idEspecialidade = v.fkEspecialidade
+join atendimento as a on v.idVeterinario = a.fkVeterinario
+group by idVeterinario;
+
+SELECT p.nome, count(ap.fkProcedimento), sum(ap.valorUnitario) FROM procedimento AS p
+JOIN atendimentoProcedimento as ap on p.idProcedimento = ap.fkProcedimento
+WHERE p.nome LIKE '%exame%'
+group by idProcedimento;
+
+SELECT a.idAtendimento ,count(distinct ap.fkProcedimento),sum(ap.quantidade), sum(ap.valorUnitario) FROM atendimento as a
+JOIN atendimentoProcedimento as ap on a.idAtendimento = ap.fkAtendimento
+group by idAtendimento;
+
+SELECT v.nome, count(a.fkVeterinario), avg(ap.valorUnitario) FROM veterinario as v
+left JOIN atendimento as a on v.idVeterinario = a.fkVeterinario
+left join atendimentoProcedimento as ap on a.idAtendimento = ap.fkAtendimento
+group by idVeterinario
+HAVING 200 < avg(ap.valorUnitario) and 2 <  count(a.fkVeterinario);
+
+SELECT 
+    t.nome AS tutor,
+    COUNT(DISTINCT a.idAnimal) AS qtdAnimais,
+    COUNT(DISTINCT ated.idAtendimento) AS qtdAtendimentos,
+    SUM(ap.valorUnitario * ap.quantidade), 0 AS totalGasto,
+    CASE
+        WHEN COALESCE(SUM(ap.valorUnitario * ap.quantidade), 0) = 0 THEN 'Sem gastos'
+        WHEN SUM(ap.valorUnitario * ap.quantidade) <= 500 THEN 'Até R$ 500'
+        ELSE 'Acima de R$ 500'
+    END AS classificacao
+FROM tutor AS t
+LEFT JOIN animal AS a 
+    ON t.idTutor = a.fkTutor
+LEFT JOIN atendimento AS ated 
+    ON a.idAnimal = ated.fkAnimal
+LEFT JOIN atendimentoProcedimento AS ap 
+    ON ated.idAtendimento = ap.fkAtendimento
+GROUP BY t.idTutor, t.nome;
+
+
+
+
  
 -- =====================================================================
 -- EXERCÍCIO 7 - Eventos acadêmicos
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio07;
-CREATE DATABASE exercicio07;
-USE exercicio07;
+
  
 CREATE TABLE tipoParticipante (
     idTipo INT PRIMARY KEY AUTO_INCREMENT,
     descricao VARCHAR(45) NOT NULL
 );
- 
+
 CREATE TABLE participante (
     idParticipante INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL,
     email VARCHAR(100),
-    fkTipo INT -- FK -> tipoParticipante(idTipo)
- 
+    fkTipo INT,
+    CONSTRAINT fkParticipanteTipo FOREIGN KEY (fkTipo)
+        REFERENCES tipoParticipante(idTipo)
 );
- 
+
 CREATE TABLE evento (
     idEvento INT PRIMARY KEY AUTO_INCREMENT,
     titulo VARCHAR(100) NOT NULL,
     dtEvento DATE,
     duracaoHoras INT
 );
- 
+
 CREATE TABLE tema (
     idTema INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL
 );
- 
+
 CREATE TABLE eventoTema (
     idEventoTema INT PRIMARY KEY AUTO_INCREMENT,
-    fkEvento INT, -- FK -> evento(idEvento)
-    fkTema INT   -- FK -> tema(idTema)
- 
+    fkEvento INT,
+    fkTema INT,
+    CONSTRAINT fkEventoTemaEvento FOREIGN KEY (fkEvento)
+        REFERENCES evento(idEvento),
+    CONSTRAINT fkEventoTemaTema FOREIGN KEY (fkTema)
+        REFERENCES tema(idTema)
 );
- 
+
 CREATE TABLE inscricao (
     idInscricao INT PRIMARY KEY AUTO_INCREMENT,
-    fkParticipante INT, -- FK -> participante(idParticipante)
-    fkEvento INT,       -- FK -> evento(idEvento)
+    fkParticipante INT,
+    fkEvento INT,
     percPresenca DECIMAL(5,2) CHECK (percPresenca BETWEEN 0 AND 100),
-    nota DECIMAL(4,2) NULL
- 
+    nota DECIMAL(4,2) NULL,
+    CONSTRAINT fkInscricaoParticipante FOREIGN KEY (fkParticipante)
+        REFERENCES participante(idParticipante),
+    CONSTRAINT fkInscricaoEvento FOREIGN KEY (fkEvento)
+        REFERENCES evento(idEvento)
 );
  
 INSERT INTO tipoParticipante (descricao) VALUES
@@ -758,75 +1004,119 @@ INSERT INTO inscricao (fkParticipante, fkEvento, percPresenca, nota) VALUES
 (12, 7, 85.00, NULL),
 (8, 7,   0.00, NULL),
 (3, 8,  70.00, NULL);
- 
- 
+
+SELECT e.titulo, t.nome, count(i.fkParticipante) FROM evento as e
+join eventoTema as et on e.idEvento = et.fkEvento 
+join tema as t on t.idTema = et.fkTema
+join inscricao as i on e.idEvento = i.fkEvento
+WHERE t.nome LIKE '%Dados%'
+group by e.titulo, e.idEvento, t.nome
+;
+
+SELECT e.titulo, count(i.fkParticipante), count(i.nota), avg(i.nota) FROM evento as e
+join inscricao as i on e.idEvento = i.fkEvento
+group by e.titulo;
+
+
+SELECT t.nome AS tema,
+       COUNT(DISTINCT i.fkParticipante) AS qtdParticipantes
+FROM tema AS t
+JOIN eventoTema AS et ON t.idTema = et.fkTema
+JOIN inscricao AS i ON et.fkEvento = i.fkEvento
+WHERE i.percPresenca >= 75
+GROUP BY t.idTema, t.nome;
+
+SELECT e.titulo, count(i.fkParticipante) , avg(i.nota) from evento as e
+join inscricao as i on e.idEvento = i.fkEvento
+group by e.titulo
+having count(i.fkParticipante) >= 5 and avg(i.nota) > 8;
+
+SELECT tp.descricao AS tipo,
+       COUNT(DISTINCT i.fkParticipante) AS qtdPessoas,
+       AVG(i.percPresenca) AS mediaPresenca,
+       COUNT(i.nota) AS qtdAvaliacoes
+FROM tipoParticipante AS tp
+LEFT JOIN participante AS p ON p.fkTipo = tp.idTipo
+LEFT JOIN inscricao AS i ON i.fkParticipante = p.idParticipante
+GROUP BY tp.idTipo, tp.descricao;
+
+SELECT t.nome AS tema,
+       COUNT(DISTINCT et.fkEvento) AS qtdEventos,
+       COUNT(DISTINCT i.fkParticipante) AS qtdParticipantes,
+       AVG(i.nota) AS mediaAvaliacoes
+FROM tema AS t
+LEFT JOIN eventoTema AS et ON et.fkTema = t.idTema
+LEFT JOIN inscricao AS i ON i.fkEvento = et.fkEvento
+GROUP BY t.idTema, t.nome;
+
+
 -- =====================================================================
 -- EXERCÍCIO 8 - Organização ambiental
 -- =====================================================================
-DROP DATABASE IF EXISTS exercicio08;
-CREATE DATABASE exercicio08;
-USE exercicio08;
  
 CREATE TABLE regiao (
     idRegiao INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(45) NOT NULL
 );
- 
+
 CREATE TABLE situacao (
     idSituacao INT PRIMARY KEY AUTO_INCREMENT,
     descricao VARCHAR(45) NOT NULL
 );
- 
+
 CREATE TABLE areaAtuacao (
     idArea INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL
 );
- 
+
 CREATE TABLE setor (
     idSetor INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL
 );
- 
+
 CREATE TABLE projeto (
     idProjeto INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
     orcamento DECIMAL(12,2),
-    fkRegiao INT,   -- FK -> regiao(idRegiao)
-    fkSituacao INT  -- FK -> situacao(idSituacao)
- 
+    fkRegiao INT,
+    fkSituacao INT,
+    FOREIGN KEY (fkRegiao) REFERENCES regiao(idRegiao),
+    FOREIGN KEY (fkSituacao) REFERENCES situacao(idSituacao)
 );
- 
+
 CREATE TABLE voluntario (
     idVoluntario INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(80) NOT NULL,
     cidade VARCHAR(60),
-    fkArea INT -- FK -> areaAtuacao(idArea)
- 
+    fkArea INT,
+    FOREIGN KEY (fkArea) REFERENCES areaAtuacao(idArea)
 );
- 
+
 CREATE TABLE instituicao (
     idInstituicao INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
-    fkSetor INT -- FK -> setor(idSetor)
- 
+    fkSetor INT,
+    FOREIGN KEY (fkSetor) REFERENCES setor(idSetor)
 );
- 
+
 CREATE TABLE participacao (
     idParticipacao INT PRIMARY KEY AUTO_INCREMENT,
-    fkVoluntario INT, -- FK -> voluntario(idVoluntario)
-    fkProjeto INT,    -- FK -> projeto(idProjeto)
+    fkVoluntario INT,
+    fkProjeto INT,
     horasTrabalhadas INT,
-    dtIngresso DATE
- 
+    dtIngresso DATE,
+    FOREIGN KEY (fkVoluntario) REFERENCES voluntario(idVoluntario),
+    FOREIGN KEY (fkProjeto) REFERENCES projeto(idProjeto)
 );
- 
+
 CREATE TABLE apoio (
     idApoio INT PRIMARY KEY AUTO_INCREMENT,
-    fkInstituicao INT, -- FK -> instituicao(idInstituicao)
-    fkProjeto INT,     -- FK -> projeto(idProjeto)
+    fkInstituicao INT,
+    fkProjeto INT,
     valor DECIMAL(12,2),
-    dtContribuicao DATE
- 
+    dtContribuicao DATE,
+    FOREIGN KEY (fkInstituicao) REFERENCES instituicao(idInstituicao),
+    FOREIGN KEY (fkProjeto) REFERENCES projeto(idProjeto)
 );
  
 INSERT INTO regiao (nome) VALUES
